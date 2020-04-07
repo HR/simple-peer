@@ -1,5 +1,6 @@
 var common = require('./common')
 var Peer = require('../')
+var bowser = require('bowser')
 var test = require('tape')
 
 var config
@@ -28,16 +29,6 @@ test('create peer without options', function (t) {
   } else {
     t.pass('Skip no-option test in Node.js, since the wrtc option is required')
   }
-})
-
-test('can detect error when RTCPeerConstructor throws', function (t) {
-  t.plan(1)
-
-  var peer = new Peer({ wrtc: { RTCPeerConnection: null } })
-  peer.once('error', function () {
-    t.pass('got error event')
-    peer.destroy()
-  })
 })
 
 test('signal event gets emitted', function (t) {
@@ -217,13 +208,8 @@ test('new constraint formats are used', function (t) {
 })
 
 test('ensure remote address and port are available right after connection', function (t) {
-  if (common.isBrowser('safari') || common.isBrowser('ios')) {
+  if (bowser.safari || bowser.ios) {
     t.pass('Skip on Safari and iOS which do not support modern getStats() calls')
-    t.end()
-    return
-  }
-  if (common.isBrowser('chrome')) {
-    t.pass('Skip on Chrome which hides local IPs with mDNS')
     t.end()
     return
   }
@@ -255,6 +241,40 @@ test('ensure remote address and port are available right after connection', func
       peer1.destroy()
       peer2.on('close', function () { t.pass('peer2 destroyed') })
       peer2.destroy()
+    })
+  })
+})
+
+test('pre-negotiated default channel', function (t) {
+  t.plan(6)
+
+  var peer1 = new Peer({ config: config, initiator: true, wrtc: common.wrtc, channelConfig: { negotiated: true, id: 123 } })
+  var peer2 = new Peer({ config: config, wrtc: common.wrtc, channelConfig: { negotiated: true, id: 123 } })
+
+  peer1.on('signal', function (data) {
+    peer2.signal(data)
+  })
+
+  peer2.on('signal', function (data) {
+    peer1.signal(data)
+  })
+
+  peer1.on('connect', function () {
+    peer1.send('sup peer2')
+    peer2.on('data', function (data) {
+      t.ok(Buffer.isBuffer(data), 'data is Buffer')
+      t.equal(data.toString(), 'sup peer2', 'got correct message')
+
+      peer2.send('sup peer1')
+      peer1.on('data', function (data) {
+        t.ok(Buffer.isBuffer(data), 'data is Buffer')
+        t.equal(data.toString(), 'sup peer1', 'got correct message')
+
+        peer1.on('close', function () { t.pass('peer1 destroyed') })
+        peer1.destroy()
+        peer2.on('close', function () { t.pass('peer2 destroyed') })
+        peer2.destroy()
+      })
     })
   })
 })
