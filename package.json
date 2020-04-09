@@ -11,11 +11,11 @@
     "url": "https://github.com/feross/simple-peer/issues"
   },
   "dependencies": {
-    "debug": "^4.0.1",
-    "get-browser-rtc": "^1.0.0",
-    "inherits": "^2.0.1",
-    "randombytes": "^2.0.3",
-    "readable-stream": "^2.3.4"
+    "debug": "^4.1.1",
+    "get-browser-rtc": "^1.0.2",
+    "inherits": "^2.0.4",
+    "randombytes": "^2.1.0",
+    "readable-stream": "^2.3.6"
   },
   "devDependencies": {
     "airtap": "1.0.0",
